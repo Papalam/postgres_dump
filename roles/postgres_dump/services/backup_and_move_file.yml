@@ -1,0 +1,33 @@
+---
+- name: "[{{ database }}] Формирование имени выходного файла"
+  ansible.builtin.set_fact:
+    file_name_backup: "{{ database }}.part_{{ ansible_date_time.day }}.backup"
+
+- name: "[{{ database }}] Запуск выгрузки данных"
+  community.docker.docker_container:
+    name: "{{ image_docker_name }}"
+    image: "{{ image_docker_name }}"
+    state: started
+    detach: no
+    command: >
+      --host postgres --port 5432 --username "postgres" --role "postgres" --no-password 
+      --format custom --blobs --section pre-data --section data --section post-data --encoding UTF8 
+      --verbose --file /backups/{{ file_name_backup }} {{ database }}
+    volumes:
+      - /home/docker-containers/postgres/BACKUPS:/backups
+    networks:
+      - name: postgres_default
+
+- name: "[{{ database }}] Создание скрипта отправки на сервер"
+  ansible.builtin.template:
+    src: script.sh
+    dest: "{{ path_to_backup_files_on_server }}"
+    mode: 0755
+
+- name: "[{{ database }}] Передача файла в хранилище"
+  ansible.builtin.shell: "{{ path_to_backup_files_on_server }}/script.sh"
+
+- name: Очистка файлов после работы
+  ansible.builtin.file:
+    path: "{{ path_to_backup_files_on_server }}"
+    state: absent

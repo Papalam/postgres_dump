@@ -1,0 +1,70 @@
+---
+- name: Настройка системы
+  block:
+    - name: Установка дополнительных пакетов
+      ansible.builtin.pip:
+        name: docker
+
+    - name: Cоздание директории и файлов для сборки
+      ansible.builtin.file:
+        path: "{{ path_to_temp_files }}"
+        mode: 0755
+        state: directory
+
+    - name: Копирование файлов для сборки контейнеров
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "{{ path_to_temp_files }}"
+        owner: root
+        mode: 0644
+      loop:
+        - Dockerfile
+        - .pgpass
+
+  tags: preconfig
+
+- name: Работаем с образами докера
+  block:
+    - name: Получение образа postgres
+      community.docker.docker_image:
+        name: postgres
+        source: pull
+        tag: latest
+        pull:
+          platform: amd64
+
+    - name: Остановка и удаление контейнера
+      community.docker.docker_container:
+        name: "{{ image_docker_name }}"
+        state: absent
+
+    - name: Удаляем старый образ
+      community.docker.docker_image:
+        name: "{{ image_docker_name }}"
+        state: absent
+
+    - name: Собираем новый образ
+      community.docker.docker_image:
+        name: "{{ image_docker_name }}"
+        tag: latest
+        build:
+          path: "{{ path_to_temp_files }}"
+          dockerfile: "{{ path_to_temp_files }}/Dockerfile"
+        source: build
+
+    - name: Очистка файлов после работы
+      ansible.builtin.file:
+        path: "{{ path_to_temp_files }}"
+        state: absent
+
+  tags: images
+
+- name: Работа контейнера
+  block:
+    - name: Запуск процесса выгрузки
+      ansible.builtin.include_tasks: "../services/backup_and_move_file.yml"
+      vars:
+        - database: "{{ item }}"
+      loop: "{{ databases }}"
+
+  tags: work

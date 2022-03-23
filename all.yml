@@ -1,0 +1,7 @@
+---
+- name: Backup databases
+  hosts: all
+  become: yes
+
+  roles:
+    - role: postgres_dump
