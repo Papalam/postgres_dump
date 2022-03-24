@@ -29,5 +29,5 @@
 
 - name: Очистка файлов после работы
   ansible.builtin.file:
-    path: "{{ path_to_backup_files_on_server }}"
+    path: "{{ path_to_backup_files_on_server }}/"
     state: absent
