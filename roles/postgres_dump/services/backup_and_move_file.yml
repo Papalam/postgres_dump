@@ -27,7 +27,12 @@
 - name: "[{{ database }}] Передача файла в хранилище"
   ansible.builtin.shell: "{{ path_to_backup_files_on_server }}/script.sh"
 
-- name: Очистка файлов после работы
+- name: "[{{ database }}] Очистка файлов после работы"
   ansible.builtin.file:
-    path: "{{ path_to_backup_files_on_server }}/"
+    path: "{{ path_to_backup_files_on_server }}/{{ file_object }}"
     state: absent
+  loop:
+    - script.sh
+    - "{{ file_name_backup }}"
+  loop_control:
+    loop_var: file_object

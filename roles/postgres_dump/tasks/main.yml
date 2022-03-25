@@ -63,8 +63,8 @@
   block:
     - name: Запуск процесса выгрузки
       ansible.builtin.include_tasks: "../services/backup_and_move_file.yml"
-      vars:
-        - database: "{{ item }}"
       loop: "{{ databases }}"
+      loop_control:
+        loop_var: database
 
   tags: work
