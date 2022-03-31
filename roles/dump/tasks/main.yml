@@ -1,0 +1,10 @@
+---
+- name: Работа контейнера
+  block:
+    - name: Запуск процесса выгрузки
+      ansible.builtin.include_tasks: "../services/backup_and_move_file.yml"
+      loop: "{{ databases }}"
+      loop_control:
+        loop_var: database
+
+  tags: dump
